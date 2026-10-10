@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { History, Calendar, FileDown, FileText } from 'lucide-react';
+import { History, Calendar, FileText } from 'lucide-react';
 import { Card } from '../components/Card';
 import { Badge } from '../components/Badge';
 import { EmptyState } from '../components/EmptyState';
@@ -8,12 +8,11 @@ import { ErrorState } from '../components/ErrorState';
 import { Button } from '../components/Button';
 import { formatPKR } from '../utils/budgetCalculator';
 import { getBudgetStatus } from '../utils/getBudgetStatus';
-import { generatePDFReport, exportCSVReport } from '../utils/reportGenerator';
+import { generatePDFReport } from '../utils/reportGenerator';
 
 export function MonthlyHistory({ profile, limits, expensesHook }) {
   const { expenses, loading, error, refreshExpenses } = expensesHook;
   const [exportingPDF, setExportingPDF] = useState(null);
-  const [exportingCSV, setExportingCSV] = useState(null);
 
   const monthlyIncome = Number(profile?.current_monthly_income || profile?.monthlyIncome) || 0;
 
@@ -70,33 +69,9 @@ export function MonthlyHistory({ profile, limits, expensesHook }) {
       });
     } catch (err) {
       console.error('[MonthlyHistory] PDF export error:', err);
+      alert('Could not download PDF report. Please try again.');
     } finally {
       setExportingPDF(null);
-    }
-  };
-
-  const handleExportCSV = (item) => {
-    try {
-      setExportingCSV(item.isoMonth);
-      const totals = {
-        needsSpent: item.needsSpent,
-        wantsSpent: item.wantsSpent,
-        savingsSpent: item.savingsSpent,
-        totalSpent: item.totalSpent,
-        needsLimit: limits?.needs || 0,
-        wantsLimit: limits?.wants || 0,
-        savingsLimit: limits?.savings || 0,
-      };
-      exportCSVReport({
-        month: item.isoMonth,
-        expenses: item.expenseList,
-        profile,
-        totals,
-      });
-    } catch (err) {
-      console.error('[MonthlyHistory] CSV export error:', err);
-    } finally {
-      setExportingCSV(null);
     }
   };
 
@@ -119,7 +94,7 @@ export function MonthlyHistory({ profile, limits, expensesHook }) {
       <div>
         <h1 className="text-xl sm:text-3xl font-bold text-slate-900">Monthly History</h1>
         <p className="text-xs sm:text-sm text-brand-muted mt-1">
-          Review your previous monthly budgeting performance. Export any month as PDF or CSV.
+          Review your previous monthly budgeting performance and download detailed PDF reports.
         </p>
       </div>
 
@@ -139,7 +114,6 @@ export function MonthlyHistory({ profile, limits, expensesHook }) {
               : '0.0';
             const isCurrent = item.isoMonth === currentIsoMonth;
             const isExportingThisPDF = exportingPDF === item.isoMonth;
-            const isExportingThisCSV = exportingCSV === item.isoMonth;
 
             return (
               <Card
@@ -190,32 +164,24 @@ export function MonthlyHistory({ profile, limits, expensesHook }) {
                   </div>
                 </div>
 
-                {/* Export Buttons */}
-                <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-100 flex-wrap">
-                  <span className="text-xs text-brand-muted font-medium mr-1">Export {item.month}:</span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    icon={FileText}
-                    isLoading={isExportingThisPDF}
-                    disabled={isExportingThisPDF || isExportingThisCSV}
-                    onClick={() => handleExportPDF(item)}
-                    className="text-indigo-700 border-indigo-200 hover:bg-indigo-50 text-xs py-1.5"
-                  >
-                    Download PDF
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    icon={FileDown}
-                    isLoading={isExportingThisCSV}
-                    disabled={isExportingThisPDF || isExportingThisCSV}
-                    onClick={() => handleExportCSV(item)}
-                    className="text-emerald-700 border-emerald-200 hover:bg-emerald-50 text-xs py-1.5"
-                  >
-                    Export CSV
-                  </Button>
-                  <span className="text-[10px] text-slate-400 ml-auto">{item.expenseList.length} expense{item.expenseList.length !== 1 ? 's' : ''}</span>
+                {/* PDF Action */}
+                <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-slate-100 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      icon={FileText}
+                      isLoading={isExportingThisPDF}
+                      disabled={isExportingThisPDF}
+                      onClick={() => handleExportPDF(item)}
+                      className="text-teal-700 border-teal-200 hover:bg-teal-50 text-xs py-1.5"
+                    >
+                      Download PDF Report
+                    </Button>
+                  </div>
+                  <span className="text-[11px] text-slate-400">
+                    {item.expenseList.length} expense{item.expenseList.length !== 1 ? 's' : ''}
+                  </span>
                 </div>
               </Card>
             );
@@ -225,4 +191,3 @@ export function MonthlyHistory({ profile, limits, expensesHook }) {
     </div>
   );
 }
-

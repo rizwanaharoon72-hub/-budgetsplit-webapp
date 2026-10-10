@@ -1,7 +1,17 @@
 /**
  * reportGenerator.js
- * Handles PDF and CSV export for monthly BudgetSplit reports.
+ * Handles PDF export for monthly BudgetSplit reports using jsPDF and jspdf-autotable.
  */
+
+import jsPDF from 'jspdf';
+import autoTable, { applyPlugin } from 'jspdf-autotable';
+
+// Ensure the plugin is registered on jsPDF prototype
+try {
+  applyPlugin(jsPDF);
+} catch (e) {
+  console.warn('jspdf-autotable plugin already applied or error:', e);
+}
 
 /**
  * Format a number as PKR currency string.
@@ -43,19 +53,16 @@ function formatDate(dateStr) {
 }
 
 /**
- * Generate PDF Monthly Budget Report using jsPDF + jspdf-autotable.
+ * Generate and download PDF Monthly Budget Report.
  *
  * @param {object} opts
- * @param {object} opts.profile  - User profile (name, monthlyIncome)
+ * @param {object} opts.profile  - User profile (name, monthlyIncome, current_monthly_income)
  * @param {string} opts.month    - YYYY-MM string
- * @param {Array}  opts.expenses - List of expense objects (UI format)
+ * @param {Array}  opts.expenses - List of expense objects
  * @param {object} opts.totals   - Spending totals {needsSpent, wantsSpent, savingsSpent, totalSpent}
  * @param {object} opts.limits   - Budget limits {needs, wants, savings, needs_ratio, wants_ratio, savings_ratio}
  */
-export async function generatePDFReport({ profile, month, expenses, totals, limits }) {
-  const { jsPDF } = await import('jspdf');
-  await import('jspdf-autotable');
-
+export function generatePDFReport({ profile, month, expenses, totals, limits }) {
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -77,7 +84,7 @@ export async function generatePDFReport({ profile, month, expenses, totals, limi
   const savingsRatio = limits?.savings_ratio ?? 20;
 
   // ── HEADER BANNER ──
-  doc.setFillColor(15, 118, 110); // teal brand color
+  doc.setFillColor(15, 118, 110); // teal-700 brand color
   doc.rect(0, 0, pageWidth, 32, 'F');
 
   doc.setTextColor(255, 255, 255);
@@ -87,7 +94,7 @@ export async function generatePDFReport({ profile, month, expenses, totals, limi
 
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text(`Monthly Financial Report`, marginLeft, 22);
+  doc.text('Monthly Financial Report', marginLeft, 22);
   doc.text(`${needsRatio}/${wantsRatio}/${savingsRatio} Budget Rule`, marginLeft, 28);
 
   doc.setTextColor(200, 255, 250);
@@ -98,7 +105,7 @@ export async function generatePDFReport({ profile, month, expenses, totals, limi
 
   let yPos = 42;
 
-  // ── INCOME SUMMARY ──
+  // ── INCOME & BUDGET SUMMARY ──
   doc.setTextColor(30, 41, 59);
   doc.setFontSize(13);
   doc.setFont('helvetica', 'bold');
@@ -119,11 +126,11 @@ export async function generatePDFReport({ profile, month, expenses, totals, limi
     [`Wants Budget (${wantsRatio}%)`, formatPKR(limits?.wants || 0)],
     [`Savings Budget (${savingsRatio}%)`, formatPKR(limits?.savings || 0)],
     ['Total Budget', formatPKR(totalBudget)],
-    ['Total Spent', formatPKR(totalSpent)],
+    ['Total Spent This Month', formatPKR(totalSpent)],
     ['Total Remaining', formatPKR(totalRemaining)],
   ];
 
-  doc.autoTable({
+  autoTable(doc, {
     startY: yPos,
     head: [['Description', 'Amount']],
     body: summaryData,
@@ -138,7 +145,7 @@ export async function generatePDFReport({ profile, month, expenses, totals, limi
     },
   });
 
-  yPos = doc.lastAutoTable.finalY + 10;
+  yPos = (doc.lastAutoTable ? doc.lastAutoTable.finalY : yPos + 40) + 10;
 
   // ── CATEGORY BREAKDOWN ──
   doc.setTextColor(30, 41, 59);
@@ -182,7 +189,7 @@ export async function generatePDFReport({ profile, month, expenses, totals, limi
     ],
   ];
 
-  doc.autoTable({
+  autoTable(doc, {
     startY: yPos,
     head: [['Category', 'Spent', 'Limit', 'Remaining', 'Used %']],
     body: categoryData,
@@ -199,7 +206,7 @@ export async function generatePDFReport({ profile, month, expenses, totals, limi
     },
   });
 
-  yPos = doc.lastAutoTable.finalY + 10;
+  yPos = (doc.lastAutoTable ? doc.lastAutoTable.finalY : yPos + 30) + 10;
 
   // ── EXPENSE DETAIL TABLE ──
   if (expenses && expenses.length > 0) {
@@ -221,7 +228,7 @@ export async function generatePDFReport({ profile, month, expenses, totals, limi
       formatPKR(exp.amount),
     ]);
 
-    doc.autoTable({
+    autoTable(doc, {
       startY: yPos,
       head: [['#', 'Description', 'Category', 'Date', 'Amount']],
       body: expenseRows,
@@ -259,85 +266,8 @@ export async function generatePDFReport({ profile, month, expenses, totals, limi
     );
   }
 
-  // Save the PDF
-  const fileName = `BudgetSplit_Monthly_Report_${month || 'report'}.pdf`;
+  // ── SAVE / DOWNLOAD ──
+  const fileName = `BudgetSplit_Report_${month || 'report'}.pdf`;
   doc.save(fileName);
   return fileName;
-}
-
-/**
- * Export monthly expenses as a CSV file.
- *
- * @param {object} opts
- * @param {string} opts.month    - YYYY-MM string
- * @param {Array}  opts.expenses - List of expense objects (UI format)
- * @param {object} opts.profile  - User profile
- * @param {object} opts.totals   - Spending totals
- */
-export function exportCSVReport({ month, expenses, profile, totals }) {
-  const monthLabel = month
-    ? new Date(month + '-01').toLocaleDateString('en-PK', { month: 'long', year: 'numeric' })
-    : 'Unknown Month';
-
-  const rows = [];
-
-  // Header row
-  rows.push(['BudgetSplit Monthly Expense Report']);
-  rows.push([`Period: ${monthLabel}`]);
-  rows.push([`Name: ${profile?.name || 'N/A'}`]);
-  rows.push([`Income: ${Number(profile?.current_monthly_income || profile?.monthlyIncome) || 0} PKR`]);
-  rows.push([`Total Spent: ${totals?.totalSpent || 0} PKR`]);
-  rows.push([]);
-
-  // Column headers
-  rows.push(['#', 'Description', 'Category', 'Date', 'Amount (PKR)', 'Recurring']);
-
-  // Data rows
-  if (expenses && expenses.length > 0) {
-    expenses.forEach((exp, idx) => {
-      const isRecurring = Boolean(exp.recurring_id || exp.title?.toLowerCase().includes('(recurring)'));
-      rows.push([
-        idx + 1,
-        `"${(exp.title || exp.note || 'Expense').replace(/"/g, '""')}"`,
-        getCategoryLabel(exp.category),
-        exp.date || exp.expense_date || 'N/A',
-        Number(exp.amount) || 0,
-        isRecurring ? 'Yes' : 'No',
-      ]);
-    });
-  } else {
-    rows.push(['', 'No expenses for this period', '', '', '', '']);
-  }
-
-  // Summary rows
-  rows.push([]);
-  rows.push(['--- Summary ---']);
-  rows.push(['Category', 'Spent (PKR)', 'Limit (PKR)', 'Remaining (PKR)']);
-
-  const totalExpenses = expenses || [];
-  const needsSpent = totalExpenses.filter(e => ['need','needs'].includes(e.category)).reduce((s,e) => s + Number(e.amount||0), 0);
-  const wantsSpent = totalExpenses.filter(e => ['want','wants'].includes(e.category)).reduce((s,e) => s + Number(e.amount||0), 0);
-  const savingsSpent = totalExpenses.filter(e => ['saving','savings'].includes(e.category)).reduce((s,e) => s + Number(e.amount||0), 0);
-
-  rows.push(['Needs', needsSpent, totals?.needsLimit || '', (totals?.needsLimit || 0) - needsSpent]);
-  rows.push(['Wants', wantsSpent, totals?.wantsLimit || '', (totals?.wantsLimit || 0) - wantsSpent]);
-  rows.push(['Savings', savingsSpent, totals?.savingsLimit || '', (totals?.savingsLimit || 0) - savingsSpent]);
-
-  // Build CSV string
-  const csvContent = rows
-    .map((row) => row.join(','))
-    .join('\n');
-
-  // Trigger download
-  const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `BudgetSplit_Expenses_${month || 'export'}.csv`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-
-  return link.download;
 }
