@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { PlusCircle, Wallet, Edit3, ArrowRight, ShieldCheck, HeartHandshake, PiggyBank, Calendar } from 'lucide-react';
+import { PlusCircle, Wallet, Edit3, ArrowRight, ShieldCheck, HeartHandshake, PiggyBank, Calendar, Sliders, Repeat } from 'lucide-react';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { BudgetCard } from '../components/BudgetCard';
@@ -11,15 +11,22 @@ import { Alert } from '../components/Alert';
 import { EmptyState } from '../components/EmptyState';
 import { Modal } from '../components/Modal';
 import { LoadingState } from '../components/LoadingState';
+import { BudgetSettingsModal } from '../components/BudgetSettingsModal';
+import { RecurringExpensesModal } from '../components/RecurringExpensesModal';
 import { formatPKR } from '../utils/budgetCalculator';
 
-export function Dashboard({ profile, limits, expensesHook }) {
+export function Dashboard({ profile, limits, onUpdateRatios, onResetRatios, expensesHook, recurringHook }) {
   const navigate = useNavigate();
-  const { currentMonthExpenses, totals, loading, deleteExpense } = expensesHook;
+  const { currentMonthExpenses, totals, loading, deleteExpense, refreshExpenses } = expensesHook;
   const [deletingExpense, setDeletingExpense] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isRecurringOpen, setIsRecurringOpen] = useState(false);
 
   const currentMonthName = new Date().toLocaleDateString('en-PK', { month: 'long', year: 'numeric' });
+  const needsRatio = limits?.needs_ratio ?? 50;
+  const wantsRatio = limits?.wants_ratio ?? 30;
+  const savingsRatio = limits?.savings_ratio ?? 20;
 
   const handleConfirmDelete = async () => {
     if (!deletingExpense) return;
@@ -53,14 +60,32 @@ export function Dashboard({ profile, limits, expensesHook }) {
             Welcome back, <span className="text-brand-accent">{profile?.name || 'User'}</span>
           </h1>
           <p className="text-xs sm:text-sm text-brand-muted mt-1">
-            Here is your current 50/30/20 budget overview and spending status.
+            Here is your current {needsRatio}/{wantsRatio}/{savingsRatio} budget overview and spending status.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3 self-stretch sm:self-auto">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap self-stretch sm:self-auto">
+          <Button
+            variant="outline"
+            size="md"
+            icon={Repeat}
+            onClick={() => setIsRecurringOpen(true)}
+            className="flex-1 sm:flex-initial text-indigo-700 border-indigo-200 hover:bg-indigo-50"
+          >
+            Recurring Bills
+          </Button>
+          <Button
+            variant="outline"
+            size="md"
+            icon={Sliders}
+            onClick={() => setIsSettingsOpen(true)}
+            className="flex-1 sm:flex-initial"
+          >
+            Ratios
+          </Button>
           <Link to="/edit-income" className="flex-1 sm:flex-initial">
             <Button variant="outline" size="md" icon={Edit3} fullWidth>
-              Edit Income
+              Income
             </Button>
           </Link>
           <Link to="/add-expense" className="flex-1 sm:flex-initial">
@@ -124,7 +149,7 @@ export function Dashboard({ profile, limits, expensesHook }) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
         <BudgetCard
           category="needs"
-          title="Needs (50%)"
+          title={`Needs (${needsRatio}%)`}
           description="Rent, bills, groceries & essentials"
           limit={limits.needs}
           spent={totals.needsSpent}
@@ -132,7 +157,7 @@ export function Dashboard({ profile, limits, expensesHook }) {
         />
         <BudgetCard
           category="wants"
-          title="Wants (30%)"
+          title={`Wants (${wantsRatio}%)`}
           description="Dining out, shopping & hobbies"
           limit={limits.wants}
           spent={totals.wantsSpent}
@@ -140,13 +165,32 @@ export function Dashboard({ profile, limits, expensesHook }) {
         />
         <BudgetCard
           category="savings"
-          title="Savings (20%)"
+          title={`Savings (${savingsRatio}%)`}
           description="Emergency fund & investments"
           limit={limits.savings}
           spent={totals.savingsSpent}
           statusObj={totals.savingsStatus}
         />
       </div>
+
+      {/* Budget Settings Modal */}
+      <BudgetSettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        ratios={limits}
+        onSaveRatios={onUpdateRatios}
+        onResetRatios={onResetRatios}
+      />
+
+      {/* Recurring Expenses Modal */}
+      {recurringHook && (
+        <RecurringExpensesModal
+          isOpen={isRecurringOpen}
+          onClose={() => setIsRecurringOpen(false)}
+          recurringHook={recurringHook}
+          onRefreshExpenses={refreshExpenses}
+        />
+      )}
 
       {/* Recent Expenses List Section */}
       <Card

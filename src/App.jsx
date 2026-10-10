@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import { useBudget } from './hooks/useBudget';
 import { useExpenses } from './hooks/useExpenses';
+import { useRecurringExpenses } from './hooks/useRecurringExpenses';
 import { AppLayout } from './layouts/AppLayout';
 import { Welcome } from './pages/Welcome';
 import { Login } from './pages/Login';
@@ -19,6 +20,7 @@ export default function App() {
   const auth = useAuth();
   const budget = useBudget(auth.user?.id);
   const expenses = useExpenses(budget.limits, auth.user?.id);
+  const recurring = useRecurringExpenses(auth.user?.id, expenses.refreshExpenses);
 
   // Show full-screen splash while restoring session or loading profile
   if (auth.loading || (auth.isAuthenticated && budget.loading && !budget.profile)) {
@@ -79,6 +81,7 @@ export default function App() {
           element={
             <AppLayout
               user={uiUser}
+              ratios={budget.ratios}
               onLogout={auth.logout}
               hasIncomeConfigured={budget.hasIncomeConfigured}
             />
@@ -102,7 +105,10 @@ export default function App() {
               <Dashboard
                 profile={budget.profile}
                 limits={budget.limits}
+                onUpdateRatios={budget.updateRatios}
+                onResetRatios={budget.resetRatios}
                 expensesHook={expenses}
+                recurringHook={recurring}
               />
             }
           />
@@ -122,7 +128,11 @@ export default function App() {
           <Route
             path="/history"
             element={
-              <MonthlyHistory profile={budget.profile} expensesHook={expenses} />
+              <MonthlyHistory
+                profile={budget.profile}
+                limits={budget.limits}
+                expensesHook={expenses}
+              />
             }
           />
 

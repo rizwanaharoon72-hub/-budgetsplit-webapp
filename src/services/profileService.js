@@ -28,10 +28,10 @@ export const profileService = {
   },
 
   /**
-   * Update name and/or current_monthly_income for the logged-in user.
+   * Update name, current_monthly_income, and/or budget ratios for the logged-in user.
    * The updated_at trigger handles the timestamp automatically.
    */
-  async updateProfile({ name, current_monthly_income }) {
+  async updateProfile({ name, current_monthly_income, needs_ratio, wants_ratio, savings_ratio }) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Not authenticated.');
 
@@ -40,6 +40,9 @@ export const profileService = {
     if (current_monthly_income !== undefined) {
       updates.current_monthly_income = Number(current_monthly_income);
     }
+    if (needs_ratio !== undefined) updates.needs_ratio = Number(needs_ratio);
+    if (wants_ratio !== undefined) updates.wants_ratio = Number(wants_ratio);
+    if (savings_ratio !== undefined) updates.savings_ratio = Number(savings_ratio);
 
     const { data, error } = await supabase
       .from('profiles')

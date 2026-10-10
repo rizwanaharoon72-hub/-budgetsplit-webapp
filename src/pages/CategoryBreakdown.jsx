@@ -22,6 +22,10 @@ export function CategoryBreakdown({ limits, expensesHook }) {
     return <LoadingState message="Analyzing category breakdowns..." />;
   }
 
+  const needsRatio = limits?.needs_ratio ?? 50;
+  const wantsRatio = limits?.wants_ratio ?? 30;
+  const savingsRatio = limits?.savings_ratio ?? 20;
+
   const pieChartData = [
     { name: 'Needs', value: totals.needsSpent || 0, limit: limits.needs },
     { name: 'Wants', value: totals.wantsSpent || 0, limit: limits.wants },
@@ -29,16 +33,16 @@ export function CategoryBreakdown({ limits, expensesHook }) {
   ];
 
   const barChartData = [
-    { name: 'Needs (50%)', spent: totals.needsSpent, limit: limits.needs },
-    { name: 'Wants (30%)', spent: totals.wantsSpent, limit: limits.wants },
-    { name: 'Savings (20%)', spent: totals.savingsSpent, limit: limits.savings },
+    { name: `Needs (${needsRatio}%)`, spent: totals.needsSpent, limit: limits.needs },
+    { name: `Wants (${wantsRatio}%)`, spent: totals.wantsSpent, limit: limits.wants },
+    { name: `Savings (${savingsRatio}%)`, spent: totals.savingsSpent, limit: limits.savings },
   ];
 
   const categories = [
     {
       key: 'need',
       title: 'Needs',
-      rule: '50% of Income',
+      rule: `${needsRatio}% of Income`,
       spent: totals.needsSpent,
       limit: limits.needs,
       statusObj: totals.needsStatus,
@@ -48,7 +52,7 @@ export function CategoryBreakdown({ limits, expensesHook }) {
     {
       key: 'want',
       title: 'Wants',
-      rule: '30% of Income',
+      rule: `${wantsRatio}% of Income`,
       spent: totals.wantsSpent,
       limit: limits.wants,
       statusObj: totals.wantsStatus,
@@ -58,7 +62,7 @@ export function CategoryBreakdown({ limits, expensesHook }) {
     {
       key: 'saving',
       title: 'Savings',
-      rule: '20% of Income',
+      rule: `${savingsRatio}% of Income`,
       spent: totals.savingsSpent,
       limit: limits.savings,
       statusObj: totals.savingsStatus,
@@ -86,7 +90,7 @@ export function CategoryBreakdown({ limits, expensesHook }) {
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Category Breakdown</h1>
         <p className="text-sm text-brand-muted mt-1">
-          Detailed breakdown of your spending against the 50/30/20 rule.
+          Detailed breakdown of your spending against your configured {needsRatio}/{wantsRatio}/{savingsRatio} budget allocations.
         </p>
       </div>
 

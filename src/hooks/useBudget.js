@@ -72,24 +72,59 @@ export function useBudget(userId) {
     }
   };
 
+  /**
+   * Update custom budget ratios in Supabase profile.
+   */
+  const updateRatios = async ({ needs_ratio, wants_ratio, savings_ratio }) => {
+    try {
+      setError(null);
+      const updated = await profileService.updateProfile({
+        needs_ratio: Number(needs_ratio),
+        wants_ratio: Number(wants_ratio),
+        savings_ratio: Number(savings_ratio),
+      });
+      setProfileState(updated);
+      return updated;
+    } catch (err) {
+      console.error('[useBudget] updateRatios error:', err);
+      throw err;
+    }
+  };
+
+  /**
+   * Reset budget ratios back to default 50/30/20.
+   */
+  const resetRatios = async () => {
+    return updateRatios({ needs_ratio: 50, wants_ratio: 30, savings_ratio: 20 });
+  };
+
   // The DB column is `current_monthly_income`; adapt for the rest of the frontend
   const monthlyIncome = Number(profile?.current_monthly_income) || 0;
-  const limits = calculateBudget(monthlyIncome);
+  const ratios = {
+    needs_ratio: Number(profile?.needs_ratio ?? 50),
+    wants_ratio: Number(profile?.wants_ratio ?? 30),
+    savings_ratio: Number(profile?.savings_ratio ?? 20),
+  };
+  const limits = calculateBudget(monthlyIncome, ratios);
 
   // Expose profile in the shape the existing pages expect (with a `name` field)
   const adaptedProfile = profile
-    ? { ...profile, name: profile.name, monthlyIncome }
+    ? { ...profile, name: profile.name, monthlyIncome, ratios }
     : null;
 
   return {
     profile: adaptedProfile,
     monthlyIncome,
+    ratios,
     limits,
     hasIncomeConfigured: monthlyIncome > 0,
     loading,
     error,
     setProfile,
     updateIncome,
+    updateRatios,
+    resetRatios,
     refreshBudget: loadProfile,
   };
 }
+

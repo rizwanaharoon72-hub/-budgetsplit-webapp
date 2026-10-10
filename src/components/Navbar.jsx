@@ -3,8 +3,9 @@ import { Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, PlusCircle, PieChart, History, Edit3, LogOut, Wallet } from 'lucide-react';
 import { Button } from './Button';
 
-export function Navbar({ user, onLogout }) {
+export function Navbar({ user, ratios, onLogout }) {
   const location = useLocation();
+  const ratioTag = ratios ? `${ratios.needs_ratio}/${ratios.wants_ratio}/${ratios.savings_ratio}` : '50/30/20';
 
   const navItems = [
     { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
@@ -24,7 +25,7 @@ export function Navbar({ user, onLogout }) {
               <Wallet className="w-5 h-5 text-white" />
             </div>
             <span>Budget<span className="text-brand-accent">Split</span></span>
-            <span className="hidden min-[400px]:inline-block text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-normal">50/30/20</span>
+            <span className="hidden min-[400px]:inline-block text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-normal">{ratioTag}</span>
           </Link>
 
           {/* Desktop Nav */}

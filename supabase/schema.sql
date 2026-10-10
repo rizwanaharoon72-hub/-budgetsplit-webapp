@@ -127,3 +127,58 @@ drop policy if exists "Users can delete own expenses" on public.expenses;
 create policy "Users can delete own expenses"
 on public.expenses for delete
 using (auth.uid() = user_id);
+
+-- ==========================
+-- TABLE: recurring_expenses
+-- ==========================
+create table if not exists public.recurring_expenses (
+    id uuid primary key default gen_random_uuid(),
+    user_id uuid not null references public.profiles(id) on delete cascade,
+    title text not null,
+    amount numeric(12,2) not null check (amount > 0),
+    category text not null check (category in ('needs', 'wants', 'savings')),
+    start_date date not null default current_date,
+    frequency text not null default 'monthly',
+    end_date date,
+    is_active boolean not null default true,
+    last_generated_month text,
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now()
+);
+
+-- Optional recurring_id link in expenses table
+alter table public.expenses add column if not exists recurring_id uuid references public.recurring_expenses(id) on delete set null;
+
+-- Indexes
+create index if not exists idx_recurring_user_id on public.recurring_expenses(user_id);
+
+-- Trigger for updated_at
+drop trigger if exists trg_recurring_expenses_updated_at on public.recurring_expenses;
+create trigger trg_recurring_expenses_updated_at
+before update on public.recurring_expenses
+for each row execute function public.set_updated_at();
+
+-- RLS for recurring_expenses
+alter table public.recurring_expenses enable row level security;
+
+drop policy if exists "Users can read own recurring_expenses" on public.recurring_expenses;
+create policy "Users can read own recurring_expenses"
+on public.recurring_expenses for select
+using (auth.uid() = user_id);
+
+drop policy if exists "Users can insert own recurring_expenses" on public.recurring_expenses;
+create policy "Users can insert own recurring_expenses"
+on public.recurring_expenses for insert
+with check (auth.uid() = user_id);
+
+drop policy if exists "Users can update own recurring_expenses" on public.recurring_expenses;
+create policy "Users can update own recurring_expenses"
+on public.recurring_expenses for update
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
+
+drop policy if exists "Users can delete own recurring_expenses" on public.recurring_expenses;
+create policy "Users can delete own recurring_expenses"
+on public.recurring_expenses for delete
+using (auth.uid() = user_id);
+

@@ -3,7 +3,7 @@ import { Outlet, Navigate, useLocation } from 'react-router-dom';
 import { Navbar } from '../components/Navbar';
 import { MobileNav } from '../components/MobileNav';
 
-export function AppLayout({ user, onLogout, hasIncomeConfigured }) {
+export function AppLayout({ user, ratios, onLogout, hasIncomeConfigured }) {
   const location = useLocation();
 
   // Guard: not authenticated → login
@@ -18,7 +18,7 @@ export function AppLayout({ user, onLogout, hasIncomeConfigured }) {
 
   return (
     <div className="min-h-screen flex flex-col bg-brand-bg text-brand-dark pb-20 md:pb-8">
-      <Navbar user={user} onLogout={onLogout} />
+      <Navbar user={user} ratios={ratios} onLogout={onLogout} />
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <Outlet />
       </main>

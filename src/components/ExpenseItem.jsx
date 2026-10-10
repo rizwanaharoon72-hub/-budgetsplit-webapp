@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trash2, Pencil, ShieldCheck, HeartHandshake, PiggyBank, Calendar } from 'lucide-react';
+import { Trash2, Pencil, ShieldCheck, HeartHandshake, PiggyBank, Calendar, Repeat } from 'lucide-react';
 import { formatPKR } from '../utils/budgetCalculator';
 
 export function ExpenseItem({ expense, onDelete, onEdit }) {
@@ -23,6 +23,8 @@ export function ExpenseItem({ expense, onDelete, onEdit }) {
 
   const config = categoryConfig[expense.category] || categoryConfig.need;
   const CategoryIcon = config.icon;
+  const isRecurring = Boolean(expense.recurring_id || expense.title?.toLowerCase().includes('(recurring)'));
+
   const formattedDate = expense.date
     ? new Date(expense.date).toLocaleDateString('en-PK', {
         month: 'short',
@@ -47,6 +49,12 @@ export function ExpenseItem({ expense, onDelete, onEdit }) {
             >
               {config.label}
             </span>
+            {isRecurring && (
+              <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-semibold px-1.5 py-0.5 rounded border bg-indigo-50 text-indigo-700 border-indigo-200">
+                <Repeat className="w-3 h-3" />
+                Recurring
+              </span>
+            )}
             <span className="text-[11px] sm:text-xs text-brand-muted flex items-center gap-1 shrink-0">
               <Calendar className="w-3 h-3" />
               {formattedDate}
