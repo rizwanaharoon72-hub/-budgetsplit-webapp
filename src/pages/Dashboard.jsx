@@ -113,7 +113,8 @@ export function Dashboard({ profile, limits, onUpdateRatios, onResetRatios, expe
       )}
 
       {/* Main Income & Total Budget Summary Bar */}
-      <Card className="bg-slate-900 text-white border-slate-800">
+      {/* Note: using plain div instead of Card because Card hardcodes bg-white */}
+      <div className="bg-slate-900 text-white border border-slate-800 rounded-xl shadow-sm p-4 sm:p-6">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
           <div>
             <span className="text-xs font-medium text-slate-400 block mb-1">Monthly Income</span>
@@ -143,7 +144,7 @@ export function Dashboard({ profile, limits, onUpdateRatios, onResetRatios, expe
             </div>
           </div>
         </div>
-      </Card>
+      </div>
 
       {/* 3 Budget Buckets Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
