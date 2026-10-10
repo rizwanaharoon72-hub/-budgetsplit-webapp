@@ -7,9 +7,13 @@ import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { Alert } from '../components/Alert';
 
-export function AddExpense({ expensesHook }) {
+export function AddExpense({ expensesHook, ratios }) {
   const navigate = useNavigate();
   const location = useLocation();
+
+  const needsRatio = ratios?.needs_ratio ?? 50;
+  const wantsRatio = ratios?.wants_ratio ?? 30;
+  const savingsRatio = ratios?.savings_ratio ?? 20;
 
   const editingExpense = location.state?.expense || null;
   const isEditMode = !!editingExpense;
@@ -41,9 +45,9 @@ export function AddExpense({ expensesHook }) {
   }, [editingExpense]);
 
   const categoryOptions = [
-    { value: 'need', label: 'Need (50% Bucket) — Essentials, Rent, Utilities' },
-    { value: 'want', label: 'Want (30% Bucket) — Dining, Entertainment, Hobbies' },
-    { value: 'saving', label: 'Saving (20% Bucket) — Emergency Fund, Investments' },
+    { value: 'need', label: `Need (${needsRatio}% Bucket) — Essentials, Rent, Utilities` },
+    { value: 'want', label: `Want (${wantsRatio}% Bucket) — Dining, Entertainment, Hobbies` },
+    { value: 'saving', label: `Saving (${savingsRatio}% Bucket) — Emergency Fund, Investments` },
   ];
 
   const handleSubmit = async (e) => {
@@ -122,7 +126,7 @@ export function AddExpense({ expensesHook }) {
         <p className="text-sm text-brand-muted mt-1">
           {isEditMode
             ? 'Update details for this expense item and recalculate limits.'
-            : 'Add an expense item and assign it to one of your 50/30/20 budget buckets.'}
+            : `Add an expense item and assign it to one of your ${needsRatio}/${wantsRatio}/${savingsRatio} budget buckets.`}
         </p>
       </div>
 

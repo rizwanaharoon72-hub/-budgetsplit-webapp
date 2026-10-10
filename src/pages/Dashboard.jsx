@@ -190,6 +190,7 @@ export function Dashboard({ profile, limits, onUpdateRatios, onResetRatios, expe
           onClose={() => setIsRecurringOpen(false)}
           recurringHook={recurringHook}
           onRefreshExpenses={refreshExpenses}
+          ratios={limits}
         />
       )}
 
@@ -220,6 +221,7 @@ export function Dashboard({ profile, limits, onUpdateRatios, onResetRatios, expe
               <ExpenseItem
                 key={expense.id}
                 expense={expense}
+                ratios={limits}
                 onEdit={(exp) => navigate('/add-expense', { state: { expense: exp } })}
                 onDelete={(exp) => setDeletingExpense(exp)}
               />

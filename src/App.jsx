@@ -115,7 +115,7 @@ export default function App() {
 
           <Route
             path="/add-expense"
-            element={<AddExpense expensesHook={expenses} />}
+            element={<AddExpense expensesHook={expenses} ratios={budget.limits} />}
           />
 
           <Route
@@ -141,6 +141,7 @@ export default function App() {
             element={
               <EditIncome
                 profile={budget.profile}
+                ratios={budget.limits}
                 onUpdateIncome={async (income) => {
                   await budget.updateIncome(income);
                 }}

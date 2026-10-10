@@ -12,6 +12,7 @@ export function RecurringExpensesModal({
   onClose,
   recurringHook,
   onRefreshExpenses,
+  ratios,
 }) {
   const {
     recurringExpenses,
@@ -33,10 +34,15 @@ export function RecurringExpensesModal({
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
 
+  // Single source of truth for budget ratios (dynamic from profile / limits)
+  const needsRatio = ratios?.needs_ratio ?? 50;
+  const wantsRatio = ratios?.wants_ratio ?? 30;
+  const savingsRatio = ratios?.savings_ratio ?? 20;
+
   const categoryOptions = [
-    { value: 'need', label: 'Needs (50%) — Rent, bills, groceries' },
-    { value: 'want', label: 'Wants (30%) — Subscriptions, hobbies' },
-    { value: 'saving', label: 'Savings (20%) — Recurring investments' },
+    { value: 'need', label: `Needs (${needsRatio}%) — Rent, bills, groceries` },
+    { value: 'want', label: `Wants (${wantsRatio}%) — Subscriptions, hobbies` },
+    { value: 'saving', label: `Savings (${savingsRatio}%) — Recurring investments` },
   ];
 
   const resetForm = () => {
@@ -82,6 +88,8 @@ export function RecurringExpensesModal({
     try {
       setSubmitting(true);
       if (editingItem) {
+        // Editing ONLY updates configuration + syncs current month occurrence in-place.
+        // It never creates a duplicate occurrence.
         await updateRecurring(editingItem.id, {
           title: title.trim(),
           amount: Number(amount),
@@ -260,7 +268,14 @@ export function RecurringExpensesModal({
           ) : (
             <div className="space-y-2.5 max-h-[350px] overflow-y-auto pr-1">
               {recurringExpenses.map((item) => {
-                const catMap = { needs: 'Need', wants: 'Want', savings: 'Saving' };
+                const catMap = {
+                  needs: `Need (${needsRatio}%)`,
+                  need: `Need (${needsRatio}%)`,
+                  wants: `Want (${wantsRatio}%)`,
+                  want: `Want (${wantsRatio}%)`,
+                  savings: `Saving (${savingsRatio}%)`,
+                  saving: `Saving (${savingsRatio}%)`,
+                };
                 const catLabel = catMap[item.category] || item.category;
 
                 return (

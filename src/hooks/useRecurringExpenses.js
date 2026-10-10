@@ -16,7 +16,7 @@ export function useRecurringExpenses(userId, onOccurrencesGenerated) {
       setLoading(true);
       setError(null);
 
-      // First process any pending monthly occurrences automatically
+      // First process any pending monthly occurrences automatically (idempotent)
       const generated = await recurringExpenseService.processRecurringOccurrences();
       if (generated && generated.length > 0 && onOccurrencesGenerated) {
         onOccurrencesGenerated();
@@ -40,14 +40,16 @@ export function useRecurringExpenses(userId, onOccurrencesGenerated) {
   const addRecurring = async (data) => {
     try {
       setError(null);
-      const created = await recurringExpenseService.addRecurringExpense(data);
+      await recurringExpenseService.addRecurringExpense(data);
       // Process occurrence for new recurring expense if start_date <= current month
       const generated = await recurringExpenseService.processRecurringOccurrences();
       if (generated && generated.length > 0 && onOccurrencesGenerated) {
         onOccurrencesGenerated();
       }
-      setRecurringExpenses((prev) => [created, ...prev]);
-      return created;
+      // Re-fetch recurring expenses list with updated last_generated_month
+      const refreshed = await recurringExpenseService.getRecurringExpenses();
+      setRecurringExpenses(refreshed);
+      return refreshed[0];
     } catch (err) {
       console.error('[useRecurringExpenses] add error:', err);
       setError(err.message || 'Failed to add recurring expense.');
@@ -60,6 +62,10 @@ export function useRecurringExpenses(userId, onOccurrencesGenerated) {
       setError(null);
       const updated = await recurringExpenseService.updateRecurringExpense(id, updates);
       setRecurringExpenses((prev) => prev.map((r) => (r.id === id ? updated : r)));
+      // Inform caller to refresh regular expenses list if current month occurrence was synced
+      if (onOccurrencesGenerated) {
+        onOccurrencesGenerated();
+      }
       return updated;
     } catch (err) {
       console.error('[useRecurringExpenses] update error:', err);
@@ -86,6 +92,9 @@ export function useRecurringExpenses(userId, onOccurrencesGenerated) {
       setError(null);
       await recurringExpenseService.deleteRecurringExpense(id);
       setRecurringExpenses((prev) => prev.filter((r) => r.id !== id));
+      if (onOccurrencesGenerated) {
+        onOccurrencesGenerated();
+      }
     } catch (err) {
       console.error('[useRecurringExpenses] delete error:', err);
       setError(err.message || 'Failed to delete recurring expense.');

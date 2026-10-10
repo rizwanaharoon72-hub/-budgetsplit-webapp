@@ -2,20 +2,24 @@ import React from 'react';
 import { Trash2, Pencil, ShieldCheck, HeartHandshake, PiggyBank, Calendar, Repeat } from 'lucide-react';
 import { formatPKR } from '../utils/budgetCalculator';
 
-export function ExpenseItem({ expense, onDelete, onEdit }) {
+export function ExpenseItem({ expense, onDelete, onEdit, ratios }) {
+  const needsRatio = ratios?.needs_ratio ?? 50;
+  const wantsRatio = ratios?.wants_ratio ?? 30;
+  const savingsRatio = ratios?.savings_ratio ?? 20;
+
   const categoryConfig = {
     need: {
-      label: 'Need (50%)',
+      label: `Need (${needsRatio}%)`,
       badgeClass: 'bg-blue-50 text-blue-700 border-blue-200',
       icon: ShieldCheck,
     },
     want: {
-      label: 'Want (30%)',
+      label: `Want (${wantsRatio}%)`,
       badgeClass: 'bg-purple-50 text-purple-700 border-purple-200',
       icon: HeartHandshake,
     },
     saving: {
-      label: 'Saving (20%)',
+      label: `Saving (${savingsRatio}%)`,
       badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
       icon: PiggyBank,
     },

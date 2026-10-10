@@ -43,6 +43,11 @@ ALTER TABLE public.expenses
 -- ==========================
 CREATE INDEX IF NOT EXISTS idx_recurring_user_id ON public.recurring_expenses(user_id);
 
+-- Enforce strict database-level idempotency: at most ONE generated expense per recurring_id per month
+CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_recurring_occurrence 
+ON public.expenses (recurring_id, EXTRACT(YEAR FROM expense_date), EXTRACT(MONTH FROM expense_date))
+WHERE recurring_id IS NOT NULL;
+
 -- ==========================
 -- 5. Trigger for recurring_expenses.updated_at
 -- ==========================
